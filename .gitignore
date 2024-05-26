@@ -1,0 +1,11 @@
+# python
+venv
+__pycache__
+
+# wikiextractor
+text/
+wikiextractor/*
+*.bz2
+
+# docker
+.env

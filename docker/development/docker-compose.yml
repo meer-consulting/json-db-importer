@@ -1,0 +1,34 @@
+services:
+  wikiextractor:
+    profiles:
+      - generate-json
+    build: ../containers/wikiextractor/
+    volumes:
+      - ../../wikiextractor/:/wikiextractor/
+      - ../../data/:/data/
+    working_dir: /wikiextractor
+    command: wikiextractor --json --processes 60 --output /wikiextractor/ /data/${DUMP_FILENAME:?Set .env}
+
+  locust-master:
+    profiles:
+      - locust
+    build: ../containers/locust-oracle
+    env_file: .env
+    volumes:
+      - ../../locust/:/mnt/locust
+      - ../../wikiextractor/:/data/
+    ports:
+      - "8089:8089"
+    command: -f /mnt/locust/locustfile.py --master -H http://locust-master:8089
+
+  locust-worker:
+    profiles:
+      - locust
+    build: ../containers/locust-oracle
+    env_file: .env
+    volumes:
+      - ../../locust/:/mnt/locust
+      - ../../wikiextractor/:/data/
+    command: -f /mnt/locust/locustfile.py --worker --master-host locust-master
+    depends_on:
+      - locust-master
