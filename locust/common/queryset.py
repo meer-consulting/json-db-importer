@@ -12,7 +12,7 @@ SELECT TABLE_NAME
     def get_create_table(self, table_name):
         return f"""
 CREATE TABLE IF NOT EXISTS {table_name} (
-    data json
+    jsondata BLOB CHECK (JSONDATA IS JSON)
 )
 """
 
@@ -23,7 +23,7 @@ DROP TABLE IF EXISTS {table_name}
 
     def get_create_index_search(self, index_name, table_name):
         return f"""
-CREATE SEARCH INDEX IF NOT EXISTS {index_name} ON {table_name} (data)
+CREATE SEARCH INDEX IF NOT EXISTS {index_name} ON {table_name} (jsondata)
 """
 
     def get_drop_index_search(self, index_name):
@@ -38,34 +38,14 @@ TRUNCATE TABLE {table_name}
 
     def get_insert_1wiki_task(self, table_name):
         return f"""
-INSERT INTO {table_name}
-VALUES (
-    json_object(
-        'id' VALUE :id,
-        'revid' VALUE :revid,
-        'title' VALUE :title,
-        'url' VALUE :url
-        RETURNING BLOB)
-)
-"""
-
-    def get_bulk_insert_wiki_task(self, table_name, n):
-        jsondata = []
-        for i in range(1, n + 1):
-            jsondata.append(f"""
-(json_object(
-    'id' VALUE :id{i},
-    'revid' VALUE :revid{i},
-    'title' VALUE :title{i},
-    'url' VALUE :url{i}
-RETURNING BLOB))""")
-        return f"""
-INSERT INTO {table_name}
-VALUES {','.join(jsondata)}
+INSERT INTO {table_name} VALUES (:1)
 """
 
     def get_insert_N_wiki_task(self, table_name, n):
-        return self.get_bulk_insert_wiki_task(table_name, n)
+        tuples = [f"(:{i})" for i in range(1, n + 1)]
+        return f"""
+INSERT INTO {table_name} VALUES {'\n, \n'.join(tuples)}
+"""
 
     def get_query_all_userid(self):
         return """

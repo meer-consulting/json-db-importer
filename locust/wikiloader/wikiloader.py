@@ -1,6 +1,6 @@
 import os
 import json
-from .id_checker import WikiIdChecker
+from id_checker import WikiIdChecker
 
 
 class WikiJsonIterator:
@@ -89,7 +89,7 @@ class WikiJsonIterator:
                     title = jsondict["title"]
                     self._id_checker.regist_id(id, self.current_file.name, title)
                     self._cnt += 1
-                return jsondict
+                return json.dumps(jsondict, ensure_ascii=False, separators=(", ", ": "))
             else:
                 self._open_next_file()
 
@@ -98,8 +98,8 @@ class WikiJsonIterator:
 
 
 if __name__ == "__main__":
-    root_dir = "../../data/text/"
+    root_dir = "/data/text/"
     wiki_iterator = WikiJsonIterator(root_dir)
     for json_data in wiki_iterator:
-        pass
-    wiki_iterator.print_cnt()
+        print(json_data)
+        break

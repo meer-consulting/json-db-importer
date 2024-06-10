@@ -5,6 +5,8 @@ from locust import events
 
 
 class OracleClient:
+    DB_TYPE_JSON = oracledb.DB_TYPE_JSON
+
     def __getattr__(self, name):
         def wrapper(*args, **kwargs):
             start_time = time.time()
@@ -40,6 +42,11 @@ class OracleClient:
         username = os.environ["ORACLE_USER"]
         password = os.environ["ORACLE_PASSWORD"]
         dsn = os.environ["ORACLE_DSN"]
+
+        is_thick = os.environ["ORACLE_MODE"] == "THICK"
+        if is_thick:
+            oracledb.init_oracle_client()
+
         self.connection = oracledb.connect(user=username, password=password, dsn=dsn)
 
     def disconnect(self):

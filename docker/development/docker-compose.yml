@@ -19,7 +19,7 @@ services:
       - ../../wikiextractor/:/data/
     ports:
       - "8089:8089"
-    command: -f /mnt/locust/locustfile.py --master -H http://locust-master:8089
+    command: locust -f /mnt/locust/locustfile.py --master -H http://locust-master:8089
 
   locust-worker:
     profiles:
@@ -29,6 +29,6 @@ services:
     volumes:
       - ../../locust/:/mnt/locust
       - ../../wikiextractor/:/data/
-    command: -f /mnt/locust/locustfile.py --worker --master-host locust-master
+    command: locust -f /mnt/locust/locustfile.py --worker --master-host locust-master
     depends_on:
       - locust-master

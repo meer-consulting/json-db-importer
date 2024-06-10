@@ -1,6 +1,7 @@
 import os
 import time
 import logging
+import json
 from common.oracle_client import OracleClient
 from common.queryset import queries
 from locust import User, task, between, events
@@ -10,7 +11,7 @@ from wikiloader.wikiloader import WikiJsonIterator
 # ログレベルの設定
 logging.basicConfig(level=logging.INFO)
 
-PROPERTY_NUM = 4
+PROPERTY_NUM = 5
 INDEX_NAME = os.environ.get("SEARCH_INDEX_NAME")
 TABLE_NAME = os.environ.get("TABLE_NAME")
 TASK_RATIO_1_WIKI_IMPORT = os.environ.get("TASK_RATIO_1_WIKI_IMPORT")
@@ -93,33 +94,25 @@ class OracleUser(User):
     REQUEST_TYPE = "oracle"
     wait_time = between(0, 0)
 
-    wikiJsonItr = WikiJsonIterator("/data/text/")
+    wikiJsonItr = WikiJsonIterator("/data/")
     load_limit = int(os.environ["MAX_JSON_LOAD"])
     load_cnt = 0
     client = OracleClient()
 
     @classmethod
-    def create_1_bind_by(cls):
-        cls.load_cnt += 1
-        jsondict = next(cls.wikiJsonItr)
-        return dict(
-            id=jsondict["id"],
-            revid=jsondict["revid"],
-            url=jsondict["url"],
-            title=jsondict["title"],
-        )
-
-    @classmethod
     def create_bind_by(cls, n):
-        bind = {}
-        for i in range(1, n + 1):
+        bind = []
+        for i in range(n):
             cls.load_cnt += 1
-            jsondict = next(cls.wikiJsonItr)
-            bind[f"id{i}"] = jsondict["id"]
-            bind[f"revid{i}"] = jsondict["revid"]
-            bind[f"url{i}"] = jsondict["url"]
-            bind[f"title{i}"] = jsondict["title"]
-        return bind
+            jsondump = next(cls.wikiJsonItr)
+            if not jsondump:
+                break
+            bind.append(jsondump)
+
+        if len(bind) == 0:
+            return None
+        else:
+            return bind
 
     @classmethod
     def reached_load_limit(cls):
@@ -172,9 +165,11 @@ class OracleUser(User):
         try:
             with conn.cursor() as cur:
                 conn.begin()
-                bind = OracleUser.create_1_bind_by()
-                query = queries.get_insert_1wiki_task(TABLE_NAME)
-                cur.execute(query, bind)
+                OracleUser.wikiJsonItr
+                bind = OracleUser.create_bind_by(1)
+                if bind is not None:
+                    query = queries.get_insert_N_wiki_task(TABLE_NAME, len(bind))
+                    cur.execute(query, bind)
                 conn.commit()
 
                 logging.info(f"affected rows: {cur.rowcount}")
@@ -200,10 +195,9 @@ class OracleUser(User):
             with conn.cursor() as cur:
                 conn.begin()
                 bind = OracleUser.create_bind_by(10)
-                query = queries.get_insert_N_wiki_task(
-                    TABLE_NAME, len(bind) // PROPERTY_NUM
-                )
-                cur.execute(query, bind)
+                if bind is not None:
+                    query = queries.get_insert_N_wiki_task(TABLE_NAME, len(bind))
+                    cur.execute(query, bind)
                 conn.commit()
 
                 logging.info(f"affected rows: {cur.rowcount}")
@@ -229,10 +223,9 @@ class OracleUser(User):
             with conn.cursor() as cur:
                 conn.begin()
                 bind = OracleUser.create_bind_by(100)
-                query = queries.get_insert_N_wiki_task(
-                    TABLE_NAME, len(bind) // PROPERTY_NUM
-                )
-                cur.execute(query, bind)
+                if bind is not None:
+                    query = queries.get_insert_N_wiki_task(TABLE_NAME, len(bind))
+                    cur.execute(query, [len(bind), bind])
                 conn.commit()
 
                 logging.info(f"affected rows: {cur.rowcount}")
@@ -258,10 +251,9 @@ class OracleUser(User):
             with conn.cursor() as cur:
                 conn.begin()
                 bind = OracleUser.create_bind_by(500)
-                query = queries.get_insert_N_wiki_task(
-                    TABLE_NAME, len(bind) // PROPERTY_NUM
-                )
-                cur.execute(query, bind)
+                if bind is not None:
+                    query = queries.get_insert_N_wiki_task(TABLE_NAME, len(bind))
+                    cur.execute(query, [1, bind])
                 conn.commit()
 
                 logging.info(f"affected rows: {cur.rowcount}")
@@ -287,10 +279,9 @@ class OracleUser(User):
             with conn.cursor() as cur:
                 conn.begin()
                 bind = OracleUser.create_bind_by(1000)
-                query = queries.get_insert_N_wiki_task(
-                    TABLE_NAME, len(bind) // PROPERTY_NUM
-                )
-                cur.execute(query, bind)
+                if bind is not None:
+                    query = queries.get_insert_N_wiki_task(TABLE_NAME, len(bind))
+                    cur.execute(query, [len(bind), bind])
                 conn.commit()
 
                 logging.info(f"affected rows: {cur.rowcount}")
