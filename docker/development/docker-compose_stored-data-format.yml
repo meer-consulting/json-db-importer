@@ -1,0 +1,33 @@
+services:
+  python-cli:
+    profiles:
+      - python
+    build: ../containers/locust-oracle
+    env_file: .env
+    volumes:
+      - ../../script/:/mnt/script/
+    working_dir: /mnt/script/
+
+  locust-master:
+    profiles:
+      - locust
+    build: ../containers/locust-oracle
+    env_file: .env
+    volumes:
+      - ../../locust/:/mnt/locust
+      - ../../wikiextractor/:/data/
+    ports:
+      - "8089:8089"
+    command: locust -f /mnt/locust/locustfile-sdf.py --master -H http://locust-master:8089
+
+  locust-worker:
+    profiles:
+      - locust
+    build: ../containers/locust-oracle
+    env_file: .env
+    volumes:
+      - ../../locust/:/mnt/locust
+      - ../../wikiextractor/:/data/
+    command: locust -f /mnt/locust/locustfile-sdf.py --worker --master-host locust-master
+    depends_on:
+      - locust-master
