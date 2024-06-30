@@ -23,7 +23,7 @@ class QuerySet:
 
     def get_create_index_search(self, index_name, table_name):
         return f"""
-            CREATE SEARCH INDEX IF NOT EXISTS {table_name}_{index_name} ON {table_name} (jsondata)
+            CREATE SEARCH INDEX IF NOT EXISTS {table_name}_{index_name} ON {table_name} (jsondata) FOR JSON
             """
 
     def get_drop_index_search(self, index_name):
