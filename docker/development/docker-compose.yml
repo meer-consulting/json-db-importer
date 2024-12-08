@@ -9,9 +9,10 @@ services:
     working_dir: /wikiextractor
     command: wikiextractor --json --processes 60 --output /wikiextractor/ /data/${DUMP_FILENAME:?Set .env}
 
-  locust-master:
+  # Oracle  Databaase
+  locust-oracle-master:
     profiles:
-      - locust
+      - locust-oracle
     build: ../containers/locust-oracle
     env_file: .env
     volumes:
@@ -19,16 +20,41 @@ services:
       - ../../wikiextractor/:/data/
     ports:
       - "8089:8089"
-    command: locust -f /mnt/locust/locustfile.py --master -H http://locust-master:8089
+    command: locust -f /mnt/locust/locustfile.py --master -H http://locust-oracle-master:8089
 
-  locust-worker:
+  locust-oracle-worker:
     profiles:
-      - locust
+      - locust-oracle
     build: ../containers/locust-oracle
     env_file: .env
     volumes:
       - ../../locust/:/mnt/locust
       - ../../wikiextractor/:/data/
-    command: locust -f /mnt/locust/locustfile.py --worker --master-host locust-master
+    command: locust -f /mnt/locust/locustfile.py --worker --master-host locust-oracle-master
     depends_on:
       - locust-master
+
+  # Spanner  Databaase
+  locust-spanner-master:
+    profiles:
+      - locust-spanner
+    build: ../containers/locust-spanner
+    env_file: .env
+    volumes:
+      - ../../locust/:/mnt/locust
+      - ../../wikiextractor/:/data/
+    ports:
+      - "8089:8089"
+    command: locust -f /mnt/locust/locustfile-spanner.py --master -H http://locust-spanner-master:8089
+
+  locust-spanner-worker:
+    profiles:
+      - locust-spanner
+    build: ../containers/locust-spanner
+    env_file: .env
+    volumes:
+      - ../../locust/:/mnt/locust
+      - ../../wikiextractor/:/data/
+    command: locust -f /mnt/locust/locustfile-spanner.py --worker --master-host locust-spanner-master
+    depends_on:
+      - locust-spanner-master
